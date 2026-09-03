@@ -1,0 +1,14 @@
+so if any trail in the X to Y is active (not-blocked) then it means X and Y have dependence
+so in X and Y all are blocked means X, Y are independent and it is d-separated
+
+"Observation Blocks"
+Every trail blocked → X and Y are d-separated → conditionally independent
+blocked = observed = not-active = dependent = not d-separated
+
+A -> B -> C, without B = Not d-separated
+observe B = blocks trail and A,C = independent + d-separated
+
+Same with fork and opposite for collider
+
+ALL trails blocked → d-separated → YES
+AT LEAST ONE trail open → NOT d-separated → NO
