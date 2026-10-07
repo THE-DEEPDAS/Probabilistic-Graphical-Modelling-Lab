@@ -12,3 +12,6 @@ Same with fork and opposite for collider
 
 ALL trails blocked → d-separated → YES
 AT LEAST ONE trail open → NOT d-separated → NO
+
+normal vada ma koi pan observe thay it means that now these are d-separated i.e. independent
+for 1 trail it is true, but if multiple trails, all should be blocked. if trail is longer, at least one should be blocked i.e. observed

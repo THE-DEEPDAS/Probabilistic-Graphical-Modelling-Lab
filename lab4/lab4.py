@@ -1,112 +1,125 @@
 import sys
 
 
-def is_d_separated(adj, parents, children, x, y, evidence):
-
-    evidence = set(evidence)
-    
-    observed_desc = [False] * len(adj)
-
-    def dfs_desc(v, seen):
-        if v in seen:
-            return observed_desc[v]
-
-        # observed_desc[v] = True if v itself is observed
-        seen.add(v)
-        observed_desc[v] = v in evidence
-
-        # or any descendant of v is observed
-        for child in children[v]:
-            if dfs_desc(child, seen):
-                observed_desc[v] = True
-
+def mark_observed_descendants(v, children, evidence_set, observed_desc, seen):
+    if v in seen:
         return observed_desc[v]
 
-    for v in range(len(adj)):
-        dfs_desc(v, set())
+    seen.add(v)
+    if v in evidence_set:
+        observed_desc[v] = True
 
-    # a -> b <- c
-    def is_collider(a, b, c):
-        return a in parents[b] and c in parents[b]
+    for child in children[v]:
+        if mark_observed_descendants(child, children, evidence_set, observed_desc, seen):
+            observed_desc[v] = True
 
-    visited = [False] * len(adj)
-    visited[x] = True
+    return observed_desc[v]
 
-    def find_active_trail(cur, path):
+def compute_observed_or_descendants(n, children, evidence_set):
+    observed_desc = [False] * n
+    for v in range(n):
+        mark_observed_descendants(v, children, evidence_set, observed_desc, set())
+    return observed_desc
 
-        # We reached y, so check whether this trail is active
-        if cur == y:
 
-            for i in range(1, len(path) - 1):
-                a, b, c = path[i - 1], path[i], path[i + 1]
+def is_collider(a, b, c, parents):
+    return a in parents[b] and c in parents[b]
 
-                if is_collider(a, b, c):
-                    # Collider must be observed or have
-                    # an observed descendant
-                    if not observed_desc[b]:
-                        return False
 
-                else:
-                    # Non-collider blocks the trail if observed
-                    if b in evidence:
-                        return False
+def is_trail_active(path, parents, evidence_set, observed_desc):
+    for i in range(1, len(path) - 1):
+        a, b, c = path[i - 1], path[i], path[i + 1]
 
-            return True
+        if is_collider(a, b, c, parents):
+            # Collider must be observed or have an observed descendant
+            if not observed_desc[b]:
+                return False
+        else:
+            # Non-collider blocks trail if observed
+            if b in evidence_set:
+                return False
 
-        # Try every possible trail from current node
-        for nxt in adj[cur]:
+    return True
 
-            if visited[nxt]:
-                continue
+# visited is a list of booleans indicating whether a node has been visited in the current path i.e. this trail
+def search_active_trail(cur, target, adj, parents, evidence_set, observed_desc, visited, path):
+    if cur == target:
+        return is_trail_active(path, parents, evidence_set, observed_desc)
 
+    for nxt in adj[cur]:
+        if not visited[nxt]:
             visited[nxt] = True
             path.append(nxt)
 
-            if find_active_trail(nxt, path):
+            if search_active_trail(nxt, target, adj, parents, evidence_set, observed_desc, visited, path):
                 return True
 
             path.pop()
             visited[nxt] = False
 
-        return False
-
-    # One active trail means X and Y are NOT d-separated
-    return not find_active_trail(x, [x])
+    return False
 
 
-# main function code
-with open(sys.argv[1], "r") as f:
-    lines = [line.strip() for line in f if line.strip()]
+def is_d_separated(adj, parents, children, x, y, evidence):
+    n = len(adj)
+    evidence_set = set(evidence)
+    observed_desc = compute_observed_or_descendants(n, children, evidence_set)
 
-p = 0
+    visited = [False] * n
+    visited[x] = True
 
-n, m = map(int, lines[p].split())
-p += 1
+    has_active_trail = search_active_trail(
+        cur=x,
+        target=y,
+        adj=adj,
+        parents=parents,
+        evidence_set=evidence_set,
+        observed_desc=observed_desc,
+        visited=visited,
+        path=[x],
+    )
 
-adj = [[] for _ in range(n)]
-parents = [[] for _ in range(n)]
-children = [[] for _ in range(n)]
+    return not has_active_trail
 
-for _ in range(m):
-    u, v = map(int, lines[p].split())
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python script.py <input_file>")
+        sys.exit(1)
+
+    with open(sys.argv[1], "r") as f:
+        lines = [line.strip() for line in f if line.strip()]
+
+    p = 0
+    n, m = map(int, lines[p].split())
     p += 1
 
-    adj[u].append(v)
-    adj[v].append(u)
+    adj = [[] for _ in range(n)]
+    parents = [[] for _ in range(n)]
+    children = [[] for _ in range(n)]
 
-    parents[v].append(u)
-    children[u].append(v)
+    for _ in range(m):
+        u, v = map(int, lines[p].split())
+        p += 1
 
+        adj[u].append(v)
+        adj[v].append(u)
+        parents[v].append(u)
+        children[u].append(v)
 
-q = int(lines[p])
-p += 1
-
-for _ in range(q):
-    vals = list(map(int, lines[p].split()))
+    q = int(lines[p])
     p += 1
 
-    x, y = vals[0], vals[1]
-    evidence = vals[2:]
-    answer = "YES" if is_d_separated(adj, parents, children, x, y, evidence) else "NO"
-    print(f"Query: {x} and {y} with evidence {evidence} = {answer}")
+    for _ in range(q):
+        vals = list(map(int, lines[p].split()))
+        p += 1
 
+        x, y = vals[0], vals[1]
+        evidence = vals[2:]
+
+        answer = "YES" if is_d_separated(adj, parents, children, x, y, evidence) else "NO"
+        print(f"Query: {x} and {y} with evidence {evidence} = {answer}")
+
+
+if __name__ == "__main__":
+    main()
