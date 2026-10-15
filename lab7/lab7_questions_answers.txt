@@ -1,0 +1,117 @@
+probabilistic graphical models - lab 7
+hidden markov model
+
+1(a) question: represent the initial, transition, and emission distributions.
+answer: the initial distribution is P(F)=0.5 and P(L)=0.5. The transition matrix is:
+        F     L
+    F  0.95  0.05
+    L  0.10  0.90
+The fair die emits every roll with probability 1/6. The loaded die emits rolls
+1 to 5 with probability 0.10 each and roll 6 with probability 0.50. Every row sums to 1.
+
+1(b) question: what conditional independences does the HMM graph assert?
+answer: for each position t, state t points to state t+1 and emits observation t.
+Given state t, the past is conditionally independent of the future. The observations
+are conditionally independent when all their corresponding hidden states are known.
+
+1(c) question: generate 300 rolls and compare the loaded proportion with the stationary probability.
+answer: the generated loaded proportion is 0.3000. The stationary loaded probability is
+0.05 / (0.05 + 0.10) = 0.3333.
+
+1(d) question: how many sixes are in the supplied sequence, and is that enough to locate the loaded stretch?
+answer: there are 12 sixes. A fair die would be expected to produce 30/6 = 5 sixes.
+This difference suggests loading, but counting alone cannot locate the loaded stretch
+because it removes the order and position of the rolls.
+
+2(e) question: define the forward variable alpha(t, s).
+answer: alpha(t, s) is the joint probability of observations 0 through t and hidden
+state s at position t.
+
+2(f) question: state and implement the forward algorithm.
+answer: initialise alpha(0,s) = pi(s)P(o0|s). Then use
+alpha(t,s) = P(ot|s) sum over r of alpha(t-1,r)P(s|r).
+The probability of the complete observation sequence is the sum of the final row.
+
+2(g) question: verify the forward algorithm on five observations.
+answer: forward probability = 0.0001091196051955.
+Brute-force probability = 0.0001091196051955. They agree to machine precision.
+
+2(h) question: compare operation counts and growth rates.
+answer: with S hidden states, direct enumeration has O(S^T) growth. Forward inference
+has O(T*S^2) growth. For S=2, the counts printed by the program are:
+T=5: direct 32, forward 20.
+T=20: direct 1,048,576, forward 80.
+T=300: direct 2^300, forward 1,200.
+
+3(i) question: investigate numerical underflow.
+answer: the direct forward probability first becomes exactly zero at length 500 for
+the generated sequences tested. It is also zero at length 800.
+
+3(j) question: implement the log-space remedy.
+answer: log-space stores log probabilities. Products become additions, and sums use
+the numerically safe log-sum-exp operation. The log probability is -49.194758298968.
+
+3(k) question: implement the scaling remedy.
+answer: after every time step, divide the forward vector by its sum and add the log
+of that sum to the accumulated log probability. The result is -49.194758298968,
+which agrees with the log-space result.
+
+3(l) question: compare the two numerical remedies.
+answer: log-space is very robust and works naturally with extremely small values.
+Scaling is often simpler and is convenient for the backward pass because the same
+scale factors can be reused. Scaling is used more conveniently with filtering and
+smoothing.
+
+4(m) question: define the backward variable and state its recursion.
+answer: beta(t,s) is the probability of all observations after position t given that
+the hidden state at t is s. Initialise beta(T-1,s)=1. Then recurse backwards:
+beta(t,s) = sum over r of P(r|s)P(o(t+1)|r)beta(t+1,r).
+
+4(n) question: compare forward and backward probabilities.
+answer: forward probability = 4.315070863090e-22.
+Backward probability = 4.315070863090e-22. The two results agree.
+
+4(o) question: calculate the smoothed posterior.
+answer: the smoothed posterior is proportional to alpha(t,s)beta(t,s), then normalised
+over the two states. The two state probabilities sum to 1 at every position.
+
+4(p) question: distinguish filtering and smoothing.
+answer: filtering uses observations from the beginning through the current position.
+Smoothing uses the complete sequence, including observations after the current position.
+The program prints both loaded-state probabilities for all 30 positions.
+
+4(q) question: where do filtering and smoothing differ most?
+answer: they differ most at position 23 (using one-based positions). The smoother knows
+the future rolls after position 23, while the filter does not.
+
+5(r) question: compare the Viterbi and forward recursions.
+answer: the forward algorithm sums the scores of all predecessor states. Viterbi takes
+the maximum predecessor score instead. In log-space, both algorithms use additions,
+but forward uses log-sum-exp while Viterbi uses max.
+
+5(s) question: implement Viterbi and report the path and its log probability.
+answer: the Viterbi path is:
+F F F F F F F F F F F F F F F F F F F L L L L L L L L L L L
+The log probability of this path is -52.162126548463.
+
+5(t) question: why is the back-pointer table necessary?
+answer: each Viterbi state stores which predecessor produced its best score. Tracing
+these back-pointers from the final state gives one consistent best path. Choosing the
+best state independently at every position can join incompatible transitions.
+
+5(u) question: evaluate Viterbi on ten generated sequences.
+answer: over ten generated sequences of length 300, the mean Viterbi accuracy is 0.7930.
+
+6(v) question: compare Viterbi and posterior decoding on the supplied sequence.
+answer: the two decoded paths disagree at 2 positions.
+
+6(w) question: compare both methods over ten generated sequences.
+answer: the mean Viterbi accuracy is 0.7930, the mean posterior-decoding accuracy is
+0.7823, and the mean number of disagreements is 52.40 positions.
+
+6(x) question: what does each method optimise, and when can posterior decoding be impossible?
+answer: Viterbi finds the single most probable complete state sequence. Posterior
+decoding chooses the most probable state independently at every position, so it can
+have better position-by-position accuracy. If a transition probability is zero,
+posterior decoding can choose adjacent states whose transition is impossible, giving
+a complete sequence with probability exactly zero.

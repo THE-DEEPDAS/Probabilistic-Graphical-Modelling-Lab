@@ -13,6 +13,16 @@ Lab 4 answered d-separation by listing every trail and checking each one.
 This time you answer the same question without ever building a trail, by
 walking the graph once. On case_p6_sample.in the two programs must agree
 line for line -- that is the point of the exercise.
+
+visited = states already processed
+reached = nodes reachable from x by Bayes-ball excluding Z
+
+Bayes-ball algorithm:
+    Start from (x, up). Keep a visited set of PAIRS, not of nodes, or you will lose the trails that need to enter a node twice.
+    if we enter from child then go up to parents and down to children if v not in Z and if v in z then blocked so do nothing
+    if we enter from parent and v not in Z then pass ball to children
+    else if we enter from parent and v in Z or v in ancestors(Z) then go up to parents
+    logic is that if we enter from parent and v is a collider then it means that ball can go to parents as they are not conditionally independent anymore
 """
 
 import sys
@@ -239,14 +249,14 @@ def check_blankets(n, parents, children):
     return failures
 
 
-# T6. case_p6_student.in is the network you fitted in Practical 5, with
+# T6. blanket printing from T5
 def named_blankets(n, parents, children):
     names = ["medu", "goout", "fail", "higher", "study", "absent", "g1", "grade"]
     for v in range(n):
         print(names[v] + ": " + " ".join(names[x] for x in blanket(parents, children, v)))
 
 
-# T7. Check the blanket numerically, not just structurally. Using the CPTs you
+# T7. Check the blanket numerically, not just structurally. 
 def check_blanket_numerically(parents, children):
     sys.path.insert(0, r"D:\PGM Lab\lab5")
     import lab5_bn
